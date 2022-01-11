@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#################################### Script for species identification and genome assembling of clinical isolates ##############################################
+#################################### Script for genome assembling of  Salmonella clinical isolates ##############################################
 
 basedir=$1
 
@@ -9,30 +9,24 @@ if [ ! ${basedir} ]; then
 fi
 
 if [ ! -d ${basedir} ]; then
-	echo "Errrrrooou!!"
+	echo "Wrooong!!"
 fi
 
 echo "Using basedir: ${basedir}/"
 
 current_dir=`pwd`
 
+list1=( #list of directories names referring to different bacterial genomes sequenced # each raw fastq must be inside raw_data dir
+)
+list2=( "MeDuSa" "a5_pipeline" "a5_trimmed" )
 
-for samp in ${list5[@]}
+
+for samp in ${list1[@]}
 do
-	cd Salmonella_genomes_UK/Cris_Moreira/
-	mkdir -p ./${samp}/UK_assembly
- 	for folder in ${list3[@]}
+	for folder1 in ${list2[@]}
 	do
-		mv ${samp}/${folder} ${samp}/UK_assembly/pre_${folder}
+		mkdir -p ${basedir}/${samp}/${folder1}
 	done
-	mv ${samp} ../../
-	cd ${current_dir}
-	for folder2 in ${list6[@]}
-	do
-		mkdir -p ${basedir}/${samp}/${folder2}
-	done
-	mv Salmonella_genomes_UK/raw_data/fastq_Cris_Moreira/${samp}.R* ${samp}/raw_data/
-	gunzip ${samp}/raw_data/${samp}.R*
 	cd ${samp}/a5_pipeline
 	a5_pipeline.pl ../raw_data/${samp}.R1.fastq ../raw_data/${samp}.R2.fastq --end=5 ${samp}_a5_scaff
 	mv ${samp}_a5_scaff.ec.fastq.gz ../a5_trimmed/
@@ -66,20 +60,21 @@ do
 	mkdir -p ${basedir}/${samp}/Gapfiller/Gapfiller1
 	cp ./${samp}/MeDuSa/scaffold.fasta ./${samp}/Gapfiller/Gapfiller1/Gapfiller1.gapfilled.final.fa
 	cd ./${samp}/Gapfiller
-	echo "Lib1 bwasw /media/patrick/PASIQUIBAC/Bioinfo/genomes/${samp}/a5_trimmed/${samp}_a5.1.fastq /media/patrick/PASIQUIBAC/Bioinfo/genomes/${samp}/a5_trimmed/${samp}_a5.2.fastq 800 0.5 FR" > library.txt
-	perl ~/programs/GapFiller_v1-10_linux-x86_64/GapFiller.pl -l library.txt -s /media/patrick/PASIQUIBAC/Bioinfo/genomes/${samp}/Gapfiller/Gapfiller1/Gapfiller1.gapfilled.final.fa -m 30 -o 2 -r 0.7 -n 10 -d 50 -t 10 -g 0 -T 4 -i 20 -b Gapfiller20
+	echo "Lib1 bwasw /path/to/${samp}/a5_trimmed/${samp}_a5.1.fastq /path/to/${samp}/a5_trimmed/${samp}_a5.2.fastq 800 0.5 FR" > library.txt
+	perl ~/programs/GapFiller_v1-10_linux-x86_64/GapFiller.pl -l library.txt -s /path/to/${samp}/Gapfiller/Gapfiller1/Gapfiller1.gapfilled.final.fa -m 30 -o 2 -r 0.7 -n 10 -d 50 -t 10 -g 0 -T 4 -i 20 -b Gapfiller20
 	cd ${current_dir}
 	mkdir -p ${basedir}/${samp}/final_genome
 	cp ${samp}/Gapfiller/Gapfiller20/Gapfiller20.gapfilled.final.fa ${samp}/final_genome/${samp}.whole.final.fa
-	prokka --outdir /media/patrick/PASIQUIBAC/Bioinfo/genomes/${samp}/prokka_a5 --mincontiglen 200 --cpus 4 --prefix ${samp} --addgenes --addmrna --locustag ST --compliant --rfam --genus Salmonella --usegenus --kingdom Bacteria --gram neg /media/patrick/PASIQUIBAC/Bioinfo/genomes/${samp}/final_genome/${samp}.whole.final.fa
+	prokka --outdir /path/to/${samp}/prokka_a5 --mincontiglen 200 --cpus 4 --prefix ${samp} --addgenes --addmrna --locustag ST --compliant --rfam --genus Salmonella --usegenus --kingdom Bacteria --gram neg /media/patrick/PASIQUIBAC/Bioinfo/genomes/${samp}/final_genome/${samp}.whole.final.fa
 	cd ${current_dir}
 	pullseq -i ${samp}/final_genome/${samp}.whole.final.fa -m 3000 >> ${samp}/final_genome/${samp}.final.fa
 	echo "########Stats from ${samp}#############" >> stats_all_ST313.txt
 	assemblathon_stats.pl ${samp}/final_genome/${samp}.final.fa >> stats_all_ST313.txt
 done
 
+###  genomic island identification #############
 
-for gi in ${list5[@]}
+for gi in ${list1[@]}
 do
         cd ${gi}/prokka_a5/
         mkdir input
@@ -90,6 +85,7 @@ do
         cd ${current_dir}
 done
 
-
 			
 echo "Finito!!"
+
+exit
